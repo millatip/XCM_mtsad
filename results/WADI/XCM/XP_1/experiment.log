@@ -1,0 +1,14 @@
+Model: XCM
+
+Dataset WADI loaded
+Training set size: 2160
+Testing set size: 720
+
+Training on fold 1
+Accuracy Test: 0.9
+
+Training on fold 2
+Accuracy Test: 0.9236111111111112
+
+Training on fold 3
+Accuracy Test: 0.9138888888888889
