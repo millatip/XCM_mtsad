@@ -3,7 +3,7 @@ import yaml
 import argparse
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
 from sklearn.model_selection import StratifiedKFold
 
 from utils.data_loading import import_data
@@ -13,6 +13,9 @@ from utils.helpers import create_logger, save_experiment
 from models.mtex_cnn import mtex_cnn
 from models.xcm import xcm
 from models.xcm_seq import xcm_seq
+
+import tensorflow as tf
+from tensorflow import keras
 
 
 if __name__ == "__main__":
@@ -66,8 +69,8 @@ if __name__ == "__main__":
     )
 
     # Instantiate the result dataframes
-    train_val_epochs_accuracies = pd.DataFrame(
-        columns=["Fold", "Epoch", "Accuracy_Train", "Accuracy_Validation"]
+    train_val_epochs_precisons = pd.DataFrame(
+        columns=["Fold", "Epoch", "precison_Train", "precison_Validation"]
     )
     results = pd.DataFrame(
         columns=[
@@ -76,9 +79,9 @@ if __name__ == "__main__":
             "Batch_Size",
             "Window_Size",
             "Fold",
-            "Accuracy_Train",
-            "Accuracy_Validation",
-            "Accuracy_Test",
+            "precison_Train",
+            "precison_Validation",
+            "precison_Test",
         ]
     )
 
@@ -109,7 +112,7 @@ if __name__ == "__main__":
                 input_shape=X_train.shape[1:], n_class=y_train.shape[1]
             )
         model.compile(
-            optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"]
+            optimizer="adam", loss="binary_crossentropy", metrics=keras.metrics.Precision(name='precision')
         )
         h = model.fit(
             xtrain,
@@ -120,33 +123,33 @@ if __name__ == "__main__":
             validation_data=(xval, yval),
         )
 
-        # Calculate accuracies
-        fold_epochs_accuracies = np.concatenate(
+        # Calculate precisons
+        fold_epochs_precisons = np.concatenate(
             (
                 pd.DataFrame(np.repeat(index + 1, configuration["epochs"])),
                 pd.DataFrame(range(1, configuration["epochs"] + 1)),
-                pd.DataFrame(h.history["accuracy"]),
-                pd.DataFrame(h.history["val_accuracy"]),
+                pd.DataFrame(h.history["precision"]),
+                pd.DataFrame(h.history["val_precision"]),
             ),
             axis=1,
         )
-        acc_train = accuracy_score(
+        prec_train = precision_score(
             ytrain_nonencoded, np.argmax(model.predict(xtrain), axis=1)
         )
-        acc_val = accuracy_score(
+        prec_val = precision_score(
             yval_nonencoded, np.argmax(model.predict(xval), axis=1)
         )
-        acc_test = accuracy_score(
+        prec_test = precision_score(
             y_test_nonencoded, np.argmax(model.predict(X_test), axis=1)
         )
 
         # Add fold results to the dedicated dataframe
-        train_val_epochs_accuracies = pd.concat(
+        train_val_epochs_precisons = pd.concat(
             [
-                train_val_epochs_accuracies,
+                train_val_epochs_precisons,
                 pd.DataFrame(
-                    fold_epochs_accuracies,
-                    columns=["Fold", "Epoch", "Accuracy_Train", "Accuracy_Validation"],
+                    fold_epochs_precisons,
+                    columns=["Fold", "Epoch", "precison_Train", "precison_Validation"],
                 ),
             ],
             axis=0,
@@ -157,11 +160,11 @@ if __name__ == "__main__":
             configuration["batch_size"],
             int(configuration["window_size"] * 100),
             index + 1,
-            acc_train,
-            acc_val,
-            acc_test,
+            prec_train,
+            prec_val,
+            prec_test,
         ]
-        log("Accuracy Test: {0}".format(acc_test))
+        log("precison Test: {0}".format(prec_test))
 
     # Train the model on the full train set
     log("\nTraining on the full train set")
@@ -177,7 +180,7 @@ if __name__ == "__main__":
         )
     print(model.summary())
     model.compile(
-        optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"]
+        optimizer="adam", loss="binary_crossentropy", metrics=keras.metrics.Precision(name='precision')
     )
     model.fit(
         X_train,
@@ -188,16 +191,16 @@ if __name__ == "__main__":
     )
 
     # Add result to the results dataframe
-    acc_test = accuracy_score(
+    prec_test = precision_score(
         y_test_nonencoded, np.argmax(model.predict(X_test), axis=1)
     )
-    results["Accuracy_Test_Full_Train"] = acc_test
-    log("Accuracy Test: {0}".format(acc_test))
+    results["precison_Test_Full_Train"] = prec_test
+    log("precison Test: {0}".format(prec_test))
 
     # Export model and results
     model.save(xp_dir + "/model.h5")
-    train_val_epochs_accuracies.to_csv(
-        xp_dir + "/train_val_accuracies.csv", index=False
+    train_val_epochs_precisons.to_csv(
+        xp_dir + "/train_val_precisons.csv", index=False
     )
     results.to_csv(xp_dir + "/results.csv", index=False)
     print(results)

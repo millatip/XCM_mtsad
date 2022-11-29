@@ -1,0 +1,28 @@
+Model: XCM
+
+Dataset PCA_SWAT loaded
+Training set size: 5623
+Testing set size: 1875
+
+Training on fold 1
+precison Test: 0.875
+
+Training on fold 2
+precison Test: 0.0
+
+Training on fold 3
+precison Test: 0.200836820083682
+
+Training on fold 4
+precison Test: 0.052375809935205186
+
+Training on fold 5
+precison Test: 0.11275415896487985
+
+Training on the full train set
+precison Test: 0.05428091773922775
+Model: XCM
+
+Dataset PCA_SWAT loaded
+Training set size: 5623
+Testing set size: 1875
